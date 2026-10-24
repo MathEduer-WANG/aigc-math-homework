@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分数加减法可视化练习器 · 小学数学</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --s1: #2a78d6;   /* 分数① */
+    --s2: #eb6834;   /* 分数② */
+    --s3: #1baf7a;   /* 结果 */
+    --good: #0ca30c;
+    --warning: #b46a00;
+    --critical: #d03b3b;
+    --border: rgba(11,11,11,0.10);
+    --s1-soft: #e3eefb;
+    --s2-soft: #fde6db;
+    --s3-soft: #e0f3ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --ink-1: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-3: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --s1: #3987e5;
+      --s2: #d95926;
+      --s3: #199e70;
+      --warning: #fab219;
+      --border: rgba(255,255,255,0.10);
+      --s1-soft: #16304f;
+      --s2-soft: #4a2318;
+      --s3-soft: #12382b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --ink-1: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-3: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --warning: #fab219;
+    --border: rgba(255,255,255,0.10);
+    --s1-soft: #16304f;
+    --s2-soft: #4a2318;
+    --s3-soft: #12382b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--page);
+    color: var(--ink-1);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 20px 16px 60px; }
+
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    margin-top: 16px;
+  }
+
+  /* 难度选择 */
+  .levels { display: flex; flex-wrap: wrap; gap: 8px; }
+  .level {
+    flex: 1 1 auto;
+    min-width: 90px;
+    padding: 9px 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-1);
+    color: var(--ink-1);
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: center;
+  }
+  .level:hover { border-color: var(--s1); }
+  .level.on { background: var(--s1); color: #fff; border-color: var(--s1); font-weight: 600; }
+  .level small { display: block; color: var(--ink-3); font-size: 11px; }
+  .level.on small { color: rgba(255,255,255,0.85); }
+
+  /* 题目 */
+  .problem { display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; }
+  .frac .num { font-size: 30px; font-weight: 700; padding: 0 8px; }
+  .frac .bar { width: 100%; min-width: 44px; border-top: 3px solid var(--ink-1); margin: 2px 0; }
+  .frac .den { font-size: 30px; font-weight: 700; padding: 0 8px; }
+  .op { font-size: 30px; font-weight: 700; color: var(--ink-2); }
+
+  /* 可视化 */
+  .viz { margin-top: 14px; }
+  .viz-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; flex-wrap: wrap; }
+  .viz-label { font-size: 13px; color: var(--ink-2); min-width: 60px; }
+  .bar-model { display: flex; gap: 1px; height: 30px; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; flex: 1 1 220px; min-width: 180px; }
+  .cell { flex: 1; background: transparent; }
+  .cell.fill-1 { background: var(--s1); }
+  .cell.fill-2 { background: var(--s2); }
+  .cell.fill-3 { background: var(--s3); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--ink-2); }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+  .legend .c1 { background: var(--s1); }
+  .legend .c2 { background: var(--s2); }
+  .legend .c3 { background: var(--s3); }
+
+  /* 作答 */
+  .answer { display: flex; align-items: center; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+  .answer input {
+    width: 68px; padding: 10px; text-align: center; font-size: 20px; font-weight: 600;
+    border: 1px solid var(--axis); border-radius: 9px; background: var(--surface-1); color: var(--ink-1);
+  }
+  .answer input:focus { outline: none; border-color: var(--s1); box-shadow: 0 0 0 3px var(--s1-soft); }
+  .answer .eq { font-size: 20px; color: var(--ink-3); }
+  .answer .line { width: 22px; border-top: 2px solid var(--ink-2); }
+
+  .btns { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  button.btn {
+    padding: 11px 22px; border-radius: 9px; border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--ink-1); cursor: pointer; font-size: 15px; font-weight: 600;
+  }
+  button.btn:hover { border-color: var(--s1); }
+  button.primary { background: var(--s1); color: #fff; border-color: var(--s1); }
+  button.primary:hover { filter: brightness(0.95); }
+  button.ghost { background: transparent; color: var(--ink-2); }
+
+  .feedback { margin-top: 16px; padding: 14px; border-radius: 10px; font-size: 15px; display: none; }
+  .feedback.show { display: block; }
+  .feedback.ok { background: #e8f6e8; color: #0b6b0b; border: 1px solid #bfe3bf; }
+  .feedback.no { background: #fdeaea; color: #a11; border: 1px solid #f0c4c4; }
+  :root[data-theme="dark"] .feedback.ok, :root:not([data-theme="light"]) .feedback.ok { background: #12382b; color: #7ee2a8; border-color: #1e5c44; }
+  :root[data-theme="dark"] .feedback.no, :root:not([data-theme="light"]) .feedback.no { background: #4a1c1c; color: #ffb3b3; border-color: #7a3030; }
+  .feedback .steps { white-space: pre-line; font-size: 14px; margin-top: 8px; color: var(--ink-2); }
+  :root[data-theme="dark"] .feedback .steps, :root:not([data-theme="light"]) .feedback .steps { color: var(--ink-2); }
+
+  /* 统计 */
+  .stats { display: flex; gap: 12px; margin-top: 16px; }
+  .stat { flex: 1; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
+  .stat .v { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 12px; color: var(--ink-3); }
+
+  /* 错题本 */
+  .wrongbox { margin-top: 16px; }
+  .wrongbox h2 { font-size: 15px; margin: 0 0 8px; }
+  .wrong-list { display: flex; flex-direction: column; gap: 6px; }
+  .wrong-item { display: flex; align-items: center; gap: 10px; font-size: 14px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; }
+  .wrong-item .q { font-weight: 600; }
+  .wrong-item .your { color: var(--critical); }
+  .wrong-item .right { color: var(--good); }
+  .empty { color: var(--ink-3); font-size: 13px; }
+
+  .retry-btn { margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🍕 分数加减法可视化练习器</h1>
+    <p>小学数学 · 通过图形直观理解同分母、异分母分数的加减与通分、约分</p>
+  </header>
+
+  <div class="card">
+    <div class="levels" id="levels">
+      <button class="level on" data-lv="1">同分母加法<small>1/4 + 2/4</small></button>
+      <button class="level" data-lv="2">同分母减法<small>3/4 − 1/4</small></button>
+      <button class="level" data-lv="3">异分母(倍数)<small>1/2 + 1/4</small></button>
+      <button class="level" data-lv="4">异分母(进阶)<small>1/2 + 1/3</small></button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="problem" id="problem"></div>
+
+    <div class="viz" id="viz"></div>
+
+    <div class="answer">
+      <input type="number" id="num" inputmode="numeric" placeholder="分子">
+      <span class="line"></span>
+      <input type="number" id="den" inputmode="numeric" placeholder="分母">
+      <span class="eq">=</span>
+      <span style="font-size:14px;color:var(--ink-3)">我的答案</span>
+    </div>
+
+    <div class="btns">
+      <button class="btn primary" id="check">检查答案</button>
+      <button class="btn" id="explain">看讲解</button>
+      <button class="btn ghost" id="next">下一题 →</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v" id="st-total">0</div><div class="k">已做题数</div></div>
+    <div class="stat"><div class="v" id="st-ok">0</div><div class="k">答对</div></div>
+    <div class="stat"><div class="v" id="st-rate">—</div><div class="k">正确率</div></div>
+  </div>
+
+  <div class="card wrongbox">
+    <h2>📒 错题本(可反复重练)</h2>
+    <div class="wrong-list" id="wrong-list"><div class="empty">还没有错题,继续加油!</div></div>
+    <div class="btns retry-btn"><button class="btn" id="retry">重练全部错题</button></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  // ---------- 基础工具 ----------
+  function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { var t = a % b; a = b; b = t; } return a || 1; }
+  function lcm(a, b) { return a * b / gcd(a, b); }
+  function simp(n, d) { var g = gcd(n, d); return [n / g, d / g]; }
+  function rnd(n) { return Math.floor(Math.random() * n); }
+
+  // ---------- 状态 ----------
+  var level = 1;
+  var cur = null;           // {a1,b1,a2,b2,op,ansN,ansD,steps:[]}
+  var total = 0, ok = 0;
+  var wrongs = [];          // {a1,b1,a2,b2,op,ansN,ansD,userN,userD,level}
+  var wrongMode = false;
+  var wrongQueue = [];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var elNum = $('num'), elDen = $('den'), elProblem = $('problem'), elViz = $('viz'), elFb = $('feedback');
+
+  // ---------- 出题 ----------
+  function genProblem() {
+    var a1, b1, a2, b2, op, ansN, ansD;
+    if (level === 1) {          // 同分母加法(结果≤1)
+      b1 = 3 + rnd(6);          // 3..8
+      b2 = b1;
+      a1 = 1 + rnd(b1 - 1); a2 = 1 + rnd(b1 - a1);   // a1+a2 ≤ b1
+      op = '+';
+      ansN = a1 + a2; ansD = b1;
+    } else if (level === 2) {   // 同分母减法
+      b1 = 4 + rnd(6); b2 = b1; // 4..9
+      a1 = 2 + rnd(b1 - 2); a2 = 1 + rnd(a1 - 1);    // a1 > a2
+      op = '−';
+      ansN = a1 - a2; ansD = b1;
+    } else if (level === 3) {   // 异分母,一个是另一个的倍数
+      var small = 2 + rnd(4);   // 2..5
+      var big = small * (2 + rnd(3)); // 2x..4x, max 20
+      var firstSmall = Math.random() < 0.5;
+      b1 = firstSmall ? small : big;
+      b2 = firstSmall ? big : small;
+      op = Math.random() < 0.5 ? '+' : '−';
+      // 保证结果为正且 ≤ 1
+      if (op === '+') {
+        a1 = 1 + rnd(b1 - 1); a2 = 1 + rnd(b2 - 1);
+        var L = lcm(b1, b2);
+        if (a1 * L / b1 + a2 * L / b2 > L) { // 超过1,交换成一个小的
+          a1 = 1 + rnd(Math.floor(b1 / 2) || 1); a2 = 1 + rnd(Math.floor(b2 / 2) || 1);
+          if (a1 * L / b1 + a2 * L / b2 > L) { a1 = 1; a2 = 1; }
+        }
+        ansN = a1 * L / b1 + a2 * L / b2; ansD = L;
+      } else {
+        var L2 = lcm(b1, b2);
+        a1 = 1 + rnd(b1 - 1); a2 = 1 + rnd(b2 - 1);
+        var diff = a1 * L2 / b1 - a2 * L2 / b2;
+        // 保证差为正
+        if (diff <= 0) { var t = b1; b1 = b2; b2 = t; t = a1; a1 = a2; a2 = t; }
+        var L3 = lcm(b1, b2);
+        a1 = Math.min(a1, b1 - 1); a2 = Math.min(a2, b2 - 1);
+        var diff2 = a1 * L3 / b1 - a2 * L3 / b2;
+        while (diff2 <= 0) { a1 = 1 + rnd(b1 - 1); diff2 = a1 * L3 / b1 - a2 * L3 / b2; }
+        ansN = diff2; ansD = L3;
+      }
+    } else {                    // 异分母进阶(互质或一般)
+      b1 = 2 + rnd(8); b2 = 2 + rnd(8);
+      while (b2 === b1) b2 = 2 + rnd(8);
+      if (Math.random() < 0.4) { // 一半情况强制互质
+        do { b2 = 2 + rnd(8); } while (gcd(b1, b2) !== 1);
+      }
+      op = Math.random() < 0.5 ? '+' : '−';
+      var L4 = lcm(b1, b2);
+      if (op === '+') {
+        a1 = 1 + rnd(b1 - 1); a2 = 1 + rnd(b2 - 1);
+        if (a1 * L4 / b1 + a2 * L4 / b2 > L4) {
+          a1 = 1 + rnd(Math.floor(b1 / 2) || 1); a2 = 1 + rnd(Math.floor(b2 / 2) || 1);
+          if (a1 * L4 / b1 + a2 * L4 / b2 > L4) { a1 = 1; a2 = 1; }
+        }
+        ansN = a1 * L4 / b1 + a2 * L4 / b2; ansD = L4;
+      } else {
+        a1 = 1 + rnd(b1 - 1); a2 = 1 + rnd(b2 - 1);
+        var d = a1 * L4 / b1 - a2 * L4 / b2;
+        if (d <= 0) { var t2 = b1; b1 = b2; b2 = t2; t2 = a1; a1 = a2; a2 = t2; }
+        var L5 = lcm(b1, b2);
+        a1 = Math.min(a1, b1 - 1); a2 = Math.min(a2, b2 - 1);
+        var d2 = a1 * L5 / b1 - a2 * L5 / b2;
+        while (d2 <= 0) { a1 = 1 + rnd(b1 - 1); d2 = a1 * L5 / b1 - a2 * L5 / b2; }
+        ansN = d2; ansD = L5;
+      }
+    }
+    var s = simp(ansN, ansD);
+    ansN = s[0]; ansD = s[1];
+    return { a1: a1, b1: b1, a2: a2, b2: b2, op: op, ansN: ansN, ansD: ansD };
+  }
+
+  function buildSteps(p) {
+    var st = [];
+    if (p.b1 === p.b2) {
+      st.push('两个分数的分母相同(都是 ' + p.b1 + '),分母不变,分子直接相' + (p.op === '+' ? '加' : '减') + '。');
+    } else {
+      var L = lcm(p.b1, p.b2);
+      st.push('第一步 · 通分:找出 ' + p.b1 + ' 和 ' + p.b2 + ' 的最小公倍数是 ' + L + '。');
+      st.push('  ' + p.a1 + '/' + p.b1 + ' = ' + (p.a1 * L / p.b1) + '/' + L + ', ' + p.a2 + '/' + p.b2 + ' = ' + (p.a2 * L / p.b2) + '/' + L + '。');
+      st.push('第二步 · 同分母' + (p.op === '+' ? '相加' : '相减') + ':(' + (p.a1 * L / p.b1) + ' ' + p.op + ' ' + (p.a2 * L / p.b2) + ')/' + L + ' = ' + p.ansN + '/' + p.ansD + '。');
+    }
+    var s = simp(p.ansN, p.ansD);
+    if (s[1] !== p.ansD) {
+      st.push('第三步 · 约分:' + p.ansN + '/' + p.ansD + ' = ' + s[0] + '/' + s[1] + '。');
+    } else if (p.ansD === 1) {
+      st.push('结果是整数:' + p.ansN + '。');
+    }
+    return st;
+  }
+
+  // ---------- 渲染 ----------
+  function renderProblem() {
+    var p = cur;
+    elProblem.innerHTML =
+      '<span class="frac"><span class="num">' + p.a1 + '</span><span class="bar"></span><span class="den">' + p.b1 + '</span></span>' +
+      '<span class="op">' + p.op + '</span>' +
+      '<span class="frac"><span class="num">' + p.a2 + '</span><span class="bar"></span><span class="den">' + p.b2 + '</span></span>' +
+      '<span class="op">=</span>' +
+      '<span class="frac" style="opacity:.35"><span class="num">?</span><span class="bar"></span><span class="den">?</span></span>';
+    renderViz(false);
+    elNum.value = ''; elDen.value = '';
+    hideFb();
+    elNum.focus();
+  }
+
+  function barModel(totalCells, filled, cls) {
+    var html = '<div class="bar-model">';
+    for (var i = 0; i < totalCells; i++) {
+      html += '<div class="cell' + (i < filled ? ' ' + cls : '') + '"></div>';
+    }
+    return html + '</div>';
+  }
+
+  function renderViz(showTongfen) {
+    var p = cur;
+    var html = '';
+    if (!showTongfen) {
+      html += '<div class="viz-row"><span class="viz-label">' + p.a1 + '/' + p.b1 + '</span>' +
+        barModel(p.b1, p.a1, 'fill-1') + '</div>';
+      html += '<div class="viz-row"><span class="viz-label">' + p.a2 + '/' + p.b2 + '</span>' +
+        barModel(p.b2, p.a2, 'fill-2') + '</div>';
+      html += '<div class="legend"><span><i class="c1"></i>第一个分数</span><span><i class="c2"></i>第二个分数</span></div>';
+      if (p.b1 !== p.b2) {
+        html += '<div class="viz-row" style="margin-top:10px"><button class="btn" id="btn-tongfen" style="font-size:13px">🔍 点我看「通分」过程</button></div>';
+      }
+    } else {
+      var L = lcm(p.b1, p.b2);
+      var f1 = p.a1 * L / p.b1, f2 = p.a2 * L / p.b2;
+      html += '<div class="viz-row"><span class="viz-label">' + p.a1 + '/' + p.b1 + ' → ' + f1 + '/' + L + '</span>' +
+        barModel(L, f1, 'fill-1') + '</div>';
+      html += '<div class="viz-row"><span class="viz-label">' + p.a2 + '/' + p.b2 + ' → ' + f2 + '/' + L + '</span>' +
+        barModel(L, f2, 'fill-2') + '</div>';
+      var sum = p.op === '+' ? f1 + f2 : f1 - f2;
+      html += '<div class="viz-row"><span class="viz-label">结果 ' + p.ansN + '/' + p.ansD + '</span>' +
+        barModel(L, sum, 'fill-3') + '</div>';
+      html += '<div class="legend"><span><i class="c1"></i>第一个分数</span><span><i class="c2"></i>第二个分数</span><span><i class="c3"></i>结果</span></div>';
+    }
+    elViz.innerHTML = html;
+    var bt = document.getElementById('btn-tongfen');
+    if (bt) bt.onclick = function () { renderViz(true); };
+  }
+
+  function hideFb() { elFb.className = 'feedback'; elFb.innerHTML = ''; }
+
+  function showFb(okFlag, msg) {
+    elFb.className = 'feedback show ' + (okFlag ? 'ok' : 'no');
+    elFb.innerHTML = msg;
+  }
+
+  // ---------- 作答判定 ----------
+  function check() {
+    if (!cur) return;
+    var n = parseInt(elNum.value, 10), d = parseInt(elDen.value, 10);
+    if (isNaN(n) || isNaN(d) || d <= 0) {
+      showFb(false, '⚠️ 请在「分子 / 分母」两栏填上整数,分母要大于 0。');
+      return;
+    }
+    total++;
+    var sUser = simp(n, d), sAns = simp(cur.ansN, cur.ansD);
+    var right = (sUser[0] === sAns[0] && sUser[1] === sAns[1]);
+    var userLabel = n + '/' + d;
+    var ansLabel = cur.ansN + '/' + cur.ansD;
+    if (right) {
+      ok++;
+      showFb(true, '✅ 回答正确!答案是 ' + ansLabel + '。' + (sUser[1] !== d ? '(已约分)' : ''));
+    } else {
+      showFb(false, '❌ 再想想。你的答案 ' + userLabel + ',正确答案是 ' + ansLabel + '。');
+      wrongs.push({ a1: cur.a1, b1: cur.b1, a2: cur.a2, b2: cur.b2, op: cur.op, ansN: cur.ansN, ansD: cur.ansD, userN: n, userD: d, level: level });
+      renderWrongs();
+    }
+    renderStats();
+  }
+
+  function explain() {
+    if (!cur) return;
+    var steps = buildSteps(cur).join('\n');
+    showFb(false, '📖 解题过程:\n' + steps);
+  }
+
+  function renderStats() {
+    $('st-total').textContent = total;
+    $('st-ok').textContent = ok;
+    $('st-rate').textContent = total ? Math.round(ok / total * 100) + '%' : '—';
+  }
+
+  function renderWrongs() {
+    var box = $('wrong-list');
+    if (!wrongs.length) { box.innerHTML = '<div class="empty">还没有错题,继续加油!</div>'; return; }
+    var html = '';
+    wrongs.forEach(function (w, i) {
+      html += '<div class="wrong-item"><span class="q">' + w.a1 + '/' + w.b1 + ' ' + w.op + ' ' + w.a2 + '/' + w.b2 + ' = ' + w.ansN + '/' + w.ansD + '</span>' +
+        '<span class="your">你的:' + w.userN + '/' + w.userD + '</span>' +
+        '<span class="right">正确:' + w.ansN + '/' + w.ansD + '</span></div>';
+    });
+    box.innerHTML = html;
+  }
+
+  function setLevel(lv) {
+    level = lv;
+    var btns = document.querySelectorAll('.level');
+    btns.forEach(function (b) { b.classList.toggle('on', parseInt(b.dataset.lv, 10) === lv); });
+    wrongMode = false; wrongQueue = [];
+    nextProblem();
+  }
+
+  function nextProblem() {
+    if (wrongMode && wrongQueue.length) {
+      var w = wrongQueue.shift();
+      cur = { a1: w.a1, b1: w.b1, a2: w.a2, b2: w.b2, op: w.op, ansN: w.ansN, ansD: w.ansD };
+      if (!wrongQueue.length) { wrongMode = false; $('next').textContent = '下一题 →'; }
+    } else {
+      wrongMode = false;
+      $('next').textContent = '下一题 →';
+      cur = genProblem();
+    }
+    renderProblem();
+  }
+
+  // ---------- 事件 ----------
+  document.querySelectorAll('.level').forEach(function (b) {
+    b.addEventListener('click', function () { setLevel(parseInt(b.dataset.lv, 10)); });
+  });
+  $('check').addEventListener('click', check);
+  $('explain').addEventListener('click', explain);
+  $('next').addEventListener('click', nextProblem);
+  $('retry').addEventListener('click', function () {
+    if (!wrongs.length) return;
+    wrongQueue = wrongs.slice();
+    wrongMode = true;
+    $('next').textContent = '下一错题 →';
+    var w = wrongQueue.shift();
+    cur = { a1: w.a1, b1: w.b1, a2: w.a2, b2: w.b2, op: w.op, ansN: w.ansN, ansD: w.ansD };
+    renderProblem();
+  });
+  elNum.addEventListener('keydown', function (e) { if (e.key === 'Enter') { elDen.focus(); } });
+  elDen.addEventListener('keydown', function (e) { if (e.key === 'Enter') { check(); } });
+
+  // 启动
+  nextProblem();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数学 AIGC 交互工具</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #898781;
+    --s1: #2a78d6;
+    --s2: #eb6834;
+    --border: rgba(11,11,11,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --ink-1: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-3: #898781;
+      --s1: #3987e5;
+      --s2: #d95926;
+      --border: rgba(255,255,255,0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --ink-1: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-3: #898781;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --border: rgba(255,255,255,0.10);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--page);
+    color: var(--ink-1);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 64px; }
+  header { text-align: center; margin-bottom: 32px; }
+  header .kicker { font-size: 13px; letter-spacing: .08em; color: var(--ink-3); text-transform: uppercase; }
+  header h1 { font-size: 28px; margin: 8px 0 8px; text-wrap: balance; }
+  header p { color: var(--ink-2); margin: 0; max-width: 480px; margin-inline: auto; }
+  .cards { display: grid; gap: 16px; }
+  a.card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+    transition: transform .12s ease, border-color .12s ease;
+  }
+  a.card:hover { border-color: var(--s1); transform: translateY(-2px); }
+  .card .tag { display: inline-block; font-size: 12px; padding: 3px 10px; border-radius: 999px; font-weight: 600; }
+  .card .tag.e { background: color-mix(in srgb, var(--s1) 15%, transparent); color: var(--s1); }
+  .card .tag.m { background: color-mix(in srgb, var(--s2) 15%, transparent); color: var(--s2); }
+  .card h2 { margin: 12px 0 6px; font-size: 20px; }
+  .card p { margin: 0; color: var(--ink-2); font-size: 14px; }
+  .card .go { margin-top: 12px; font-size: 14px; font-weight: 600; color: var(--s1); }
+  .card.m .go { color: var(--s2); }
+  footer { text-align: center; color: var(--ink-3); font-size: 13px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">AIGC 赋能数学教育 · 交互式网页作业</div>
+    <h1>数学 AIGC 交互工具</h1>
+    <p>两个用 AI 编程能力生成的交互式学习工具,分别服务小学与中学数学的典型难点。</p>
+  </header>
+
+  <div class="cards">
+    <a class="card" href="fraction-practice.html">
+      <span class="tag e">小学数学 · 分数</span>
+      <h2>分数加减法可视化练习器</h2>
+      <p>用彩色长条图把「通分」直观画出来,四档难度、自动判分、步骤讲解、错题重练。</p>
+      <div class="go">打开练习器 →</div>
+    </a>
+
+    <a class="card m" href="linear-function-explorer.html">
+      <span class="tag m">中学数学 · 一次函数</span>
+      <h2>一次函数图像交互探索器</h2>
+      <p>拖动 k、b 滑块,实时观察图像变化,自动显示斜率、截距、增减性、交点与象限,配随机小测。</p>
+      <div class="go">打开探索器 →</div>
+    </a>
+  </div>
+
+  <footer>基于 AI 编程能力生成 · 可直接在浏览器中运行</footer>
+</div>
+</body>
+</html>

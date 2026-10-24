@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一次函数图像交互探索器 · 中学数学</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-3: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --s1: #2a78d6;   /* 直线① */
+    --s2: #eb6834;   /* 直线② */
+    --good: #0ca30c;
+    --critical: #d03b3b;
+    --border: rgba(11,11,11,0.10);
+    --s1-soft: #e3eefb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --ink-1: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-3: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --s1: #3987e5;
+      --s2: #d95926;
+      --border: rgba(255,255,255,0.10);
+      --s1-soft: #16304f;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --ink-1: #ffffff;
+    --ink-2: #c3c2b7;
+    --ink-3: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --s1: #3987e5;
+    --s2: #d95926;
+    --border: rgba(255,255,255,0.10);
+    --s1-soft: #16304f;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--page);
+    color: var(--ink-1);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--ink-2); font-size: 14px; }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-top: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 300px; gap: 16px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns: 1fr; } }
+
+  canvas { width: 100%; height: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-1); }
+
+  /* 滑块 */
+  .slider-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+  .slider-row label { font-size: 13px; color: var(--ink-2); min-width: 46px; }
+  .slider-row .tag { font-weight: 700; min-width: 20px; }
+  .tag.k1 { color: var(--s1); }
+  .tag.b1 { color: var(--s1); }
+  .tag.k2 { color: var(--s2); }
+  .tag.b2 { color: var(--s2); }
+  input[type=range] { flex: 1; accent-color: var(--s1); }
+  input[type=range].c2 { accent-color: var(--s2); }
+  .slider-row output { min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .fml { text-align: center; font-size: 20px; font-weight: 700; margin: 8px 0 4px; }
+  .fml .l1 { color: var(--s1); }
+  .fml .l2 { color: var(--s2); }
+
+  .switch-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; color: var(--ink-2); }
+
+  /* 性质卡片 */
+  .props { display: flex; flex-direction: column; gap: 6px; font-size: 14px; margin-top: 6px; }
+  .prop { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--grid); }
+  .prop:last-child { border-bottom: none; }
+  .prop .pk { color: var(--ink-2); }
+  .prop .pv { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pv.inc { color: var(--s1); }
+  .pv.dec { color: var(--s2); }
+  .pv.flat { color: var(--ink-3); }
+
+  /* 小测 */
+  .quiz-q { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  .quiz-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 520px) { .quiz-opts { grid-template-columns: 1fr; } }
+  .opt { padding: 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--surface-1); color: var(--ink-1); cursor: pointer; text-align: center; font-size: 15px; }
+  .opt:hover { border-color: var(--s1); }
+  .opt.right { background: #e8f6e8; border-color: #0ca30c; color: #0b6b0b; }
+  .opt.wrong { background: #fdeaea; border-color: var(--critical); color: #a11; }
+  :root[data-theme="dark"] .opt.right, :root:not([data-theme="light"]) .opt.right { background: #12382b; color: #7ee2a8; border-color: #1e5c44; }
+  :root[data-theme="dark"] .opt.wrong, :root:not([data-theme="light"]) .opt.wrong { background: #4a1c1c; color: #ffb3b3; border-color: #7a3030; }
+  .quiz-fb { margin-top: 10px; font-size: 14px; display: none; }
+  .quiz-fb.show { display: block; }
+  .quiz-fb.ok { color: #0b6b0b; }
+  .quiz-fb.no { color: #a11; }
+  :root[data-theme="dark"] .quiz-fb.ok, :root:not([data-theme="light"]) .quiz-fb.ok { color: #7ee2a8; }
+  :root[data-theme="dark"] .quiz-fb.no, :root:not([data-theme="light"]) .quiz-fb.no { color: #ffb3b3; }
+
+  .btn { padding: 10px 20px; border-radius: 9px; border: 1px solid var(--border); background: var(--surface-1); color: var(--ink-1); cursor: pointer; font-size: 14px; font-weight: 600; }
+  .btn:hover { border-color: var(--s1); }
+  .btn.primary { background: var(--s1); color: #fff; border-color: var(--s1); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📈 一次函数图像交互探索器</h1>
+    <p>中学数学 · 拖动滑块改变斜率 k 与截距 b,观察一次函数 y = kx + b 的图像变化</p>
+  </header>
+
+  <div class="card">
+    <div class="grid2">
+      <div>
+        <canvas id="cv" width="560" height="480"></canvas>
+        <div class="switch-row" style="justify-content:center">
+          <label><input type="checkbox" id="show2"> 显示第二条直线作对比</label>
+          <label style="margin-left:14px"><input type="checkbox" id="showPt" checked> 显示交点</label>
+        </div>
+      </div>
+
+      <div>
+        <div class="fml"><span class="l1" id="fml1">y = x + 1</span><span id="fml2wrap" style="display:none">　·　<span class="l2" id="fml2">y = -x + 3</span></span></div>
+
+        <div class="slider-row"><label>斜率 k₁</label><span class="tag k1">k₁</span><input type="range" id="k1" min="-3" max="3" step="0.5" value="1"><output id="ok1">1</output></div>
+        <div class="slider-row"><label>截距 b₁</label><span class="tag b1">b₁</span><input type="range" id="b1" min="-6" max="6" step="1" value="1"><output id="ob1">1</output></div>
+
+        <div id="line2wrap" style="display:none">
+          <div class="slider-row"><label>斜率 k₂</label><span class="tag k2">k₂</span><input type="range" class="c2" id="k2" min="-3" max="3" step="0.5" value="-1"><output id="ok2">-1</output></div>
+          <div class="slider-row"><label>截距 b₂</label><span class="tag b2">b₂</span><input type="range" class="c2" id="b2" min="-6" max="6" step="1" value="3"><output id="ob2">3</output></div>
+        </div>
+
+        <div class="props" id="props"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:15px;margin:0 0 8px">🎯 随堂小测</h2>
+    <div class="quiz-q" id="qtext"></div>
+    <div class="quiz-opts" id="qopts"></div>
+    <div class="quiz-fb" id="qfb"></div>
+    <div style="margin-top:12px"><button class="btn primary" id="qnext">换一题</button></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var cv = $('cv'), ctx = cv.getContext('2d');
+  var W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1;
+  cv.width = W * dpr; cv.height = H * dpr; ctx.scale(dpr, dpr);
+
+  var XMIN = -8, XMAX = 8, YMIN = -7, YMAX = 7;  // 世界坐标范围
+  function w2p(x, y) {
+    return [ (x - XMIN) / (XMAX - XMIN) * W, (YMAX - y) / (YMAX - YMIN) * H ];
+  }
+
+  // 读 CSS 变量颜色
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  // 当前参数
+  var k1 = 1, b1 = 1, k2 = -1, b2 = 3;
+
+  // ---------- 绘制 ----------
+  function draw() {
+    var ink = cssVar('--ink-1'), ink2 = cssVar('--ink-2'), ink3 = cssVar('--ink-3');
+    var grid = cssVar('--grid'), axis = cssVar('--axis');
+    var c1 = cssVar('--s1'), c2 = cssVar('--s2');
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = '11px system-ui, sans-serif';
+
+    // 网格(每 1 单位)+ 坐标轴
+    for (var x = Math.ceil(XMIN); x <= XMAX; x++) {
+      var p = w2p(x, 0)[0];
+      ctx.strokeStyle = (x === 0 ? axis : grid);
+      ctx.lineWidth = (x === 0 ? 1.6 : 1);
+      ctx.beginPath(); ctx.moveTo(p, 0); ctx.lineTo(p, H); ctx.stroke();
+      if (x !== 0 && x % 2 === 0) { ctx.fillStyle = ink3; ctx.textAlign = 'center'; ctx.fillText(x, p, H - 6); }
+    }
+    for (var y = Math.ceil(YMIN); y <= YMAX; y++) {
+      var q = w2p(0, y)[1];
+      ctx.strokeStyle = (y === 0 ? axis : grid);
+      ctx.lineWidth = (y === 0 ? 1.6 : 1);
+      ctx.beginPath(); ctx.moveTo(0, q); ctx.lineTo(W, q); ctx.stroke();
+      if (y !== 0 && y % 2 === 0) { ctx.fillStyle = ink3; ctx.textAlign = 'right'; ctx.fillText(y, W - 6, q - 3); }
+    }
+    // 原点
+    ctx.fillStyle = ink3; ctx.textAlign = 'left';
+    ctx.fillText('O', w2p(0, 0)[0] + 4, w2p(0, 0)[1] - 4);
+
+    drawLine(k1, b1, c1, 2.4);
+    if ($('show2').checked) drawLine(k2, b2, c2, 2.0);
+
+    // 交点
+    if ($('show2').checked && $('showPt').checked && Math.abs(k1 - k2) > 1e-9) {
+      var xi = (b2 - b1) / (k1 - k2), yi = k1 * xi + b1;
+      var pp = w2p(xi, yi);
+      if (xi >= XMIN && xi <= XMAX && yi >= YMIN && yi <= YMAX) {
+        ctx.fillStyle = ink;
+        ctx.beginPath(); ctx.arc(pp[0], pp[1], 5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = ink2; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(pp[0], pp[1], 5, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = ink2; ctx.textAlign = 'left';
+        ctx.fillText('交点(' + fmt(xi) + ', ' + fmt(yi) + ')', pp[0] + 10, pp[1] - 6);
+      }
+    }
+  }
+
+  function drawLine(k, b, color, w) {
+    ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    var started = false;
+    for (var x = XMIN; x <= XMAX; x += 0.05) {
+      var y = k * x + b;
+      if (y < YMIN - 20 || y > YMAX + 20) { started = false; continue; }
+      var p = w2p(x, y);
+      if (!started) { ctx.moveTo(p[0], p[1]); started = true; } else { ctx.lineTo(p[0], p[1]); }
+    }
+    ctx.stroke();
+  }
+
+  function fmt(n) { var r = Math.round(n * 100) / 100; return (r === 0 ? '0' : r); }
+
+  // ---------- 性质 ----------
+  function quadrants(k, b) {
+    if (k > 0) return b > 0 ? '一、二、三' : (b < 0 ? '一、三、四' : '一、三');
+    if (k < 0) return b > 0 ? '一、二、四' : (b < 0 ? '二、三、四' : '二、四');
+    return b > 0 ? '一、二' : (b < 0 ? '三、四' : 'x 轴');
+  }
+  function incDesc(k) { return k > 0 ? '增大(y 随 x 增大而增大)' : (k < 0 ? '减小(y 随 x 增大而减小)' : '不变(水平直线)'); }
+  function incCls(k) { return k > 0 ? 'inc' : (k < 0 ? 'dec' : 'flat'); }
+
+  function renderProps() {
+    var xInt = (k1 === 0) ? '无(b₁≠0 时平行于 x 轴)' : '(' + fmt(-b1 / k1) + ', 0)';
+    var rows = [
+      ['斜率 k₁', fmt(k1)],
+      ['截距 b₁', fmt(b1)],
+      ['增减性', incDesc(k1), incCls(k1)],
+      ['与 x 轴交点', xInt],
+      ['与 y 轴交点', '(0, ' + fmt(b1) + ')'],
+      ['经过的象限', quadrants(k1, b1)]
+    ];
+    var html = '';
+    rows.forEach(function (r) {
+      html += '<div class="prop"><span class="pk">' + r[0] + '</span><span class="pv ' + (r[2] || '') + '">' + r[1] + '</span></div>';
+    });
+    $('props').innerHTML = html;
+  }
+
+  // ---------- 公式显示 ----------
+  function fmtTerm(k) { return (k === 1 ? '' : (k === -1 ? '-' : fmt(k))); }
+  function renderFormula() {
+    var k1s = fmtTerm(k1), b1s = (b1 === 0 ? '' : (b1 > 0 ? ' + ' + fmt(b1) : ' − ' + fmt(-b1)));
+    $('fml1').textContent = 'y = ' + (k1s === '' ? '' : k1s) + 'x' + b1s;
+    if ($('show2').checked) {
+      var k2s = fmtTerm(k2), b2s = (b2 === 0 ? '' : (b2 > 0 ? ' + ' + fmt(b2) : ' − ' + fmt(-b2)));
+      $('fml2').textContent = 'y = ' + (k2s === '' ? '' : k2s) + 'x' + b2s;
+      $('fml2wrap').style.display = '';
+      $('line2wrap').style.display = '';
+    } else {
+      $('fml2wrap').style.display = 'none';
+      $('line2wrap').style.display = 'none';
+    }
+  }
+
+  // ---------- 随堂小测 ----------
+  var quiz = null, qAnswered = false;
+  function genQuiz() {
+    qAnswered = false;
+    $('qfb').className = 'quiz-fb'; $('qfb').textContent = '';
+    var type = Math.floor(Math.random() * 3);
+    var k = [-3, -2, -1, 1, 2, 3][Math.floor(Math.random() * 6)];
+    var b = [-6, -3, -1, 1, 2, 4, 5][Math.floor(Math.random() * 7)];
+    var opts = [], ans = 0, qtext = '';
+    if (type === 0) { // 与 y 轴交点
+      qtext = '直线 y = ' + fmtTerm(k) + 'x' + (b >= 0 ? ' + ' + fmt(b) : ' − ' + fmt(-b)) + ' 与 y 轴的交点坐标是?';
+      opts = ['(0, ' + fmt(b) + ')', '(' + fmt(b) + ', 0)', '(0, ' + fmt(-b) + ')', '(0, 0)'];
+      ans = 0;
+    } else if (type === 1) { // 增减性
+      qtext = '对于直线 y = ' + fmtTerm(k) + 'x' + (b >= 0 ? ' + ' + fmt(b) : ' − ' + fmt(-b)) + ',当 x 增大时,下列说法正确的是?';
+      opts = ['y 随 x 增大而增大', 'y 随 x 增大而减小', 'y 始终保持不变', '无法判断'];
+      ans = (k > 0 ? 0 : 1);
+    } else { // 与 x 轴交点
+      var b2 = [2, 3, 4, 6][Math.floor(Math.random() * 4)];
+      var k2 = [1, 2, 3][Math.floor(Math.random() * 3)] * (Math.random() < 0.5 ? 1 : -1);
+      var x0 = -b2 / k2;
+      qtext = '直线 y = ' + fmtTerm(k2) + 'x' + (b2 >= 0 ? ' + ' + fmt(b2) : ' − ' + fmt(-b2)) + ' 与 x 轴的交点坐标是?';
+      opts = ['(' + fmt(x0) + ', 0)', '(0, ' + fmt(x0) + ')', '(0, ' + fmt(b2) + ')', '(' + fmt(b2) + ', 0)'];
+      ans = 0;
+    }
+    quiz = { qtext: qtext, opts: opts, ans: ans };
+    $('qtext').textContent = qtext;
+    var oh = '';
+    opts.forEach(function (o, i) { oh += '<button class="opt" data-i="' + i + '">' + String.fromCharCode(65 + i) + '. ' + o + '</button>'; });
+    $('qopts').innerHTML = oh;
+    document.querySelectorAll('.opt').forEach(function (b) {
+      b.addEventListener('click', function () { answer(parseInt(b.dataset.i, 10)); });
+    });
+  }
+  function answer(i) {
+    if (qAnswered || !quiz) return;
+    qAnswered = true;
+    var opts = document.querySelectorAll('.opt');
+    opts.forEach(function (o, idx) {
+      o.disabled = true;
+      if (idx === quiz.ans) o.classList.add('right');
+      else if (idx === i) o.classList.add('wrong');
+    });
+    var fb = $('qfb');
+    fb.className = 'quiz-fb show ' + (i === quiz.ans ? 'ok' : 'no');
+    fb.textContent = i === quiz.ans ? '✅ 答对了!' : '❌ 答错了,正确答案是 ' + String.fromCharCode(65 + quiz.ans) + '。';
+  }
+
+  // ---------- 事件 ----------
+  function bindRange(id, outId, fn) {
+    var el = $(id);
+    el.addEventListener('input', function () { $(outId).textContent = fmt(parseFloat(el.value)); fn(); });
+  }
+  bindRange('k1', 'ok1', function () { k1 = parseFloat($('k1').value); refresh(); });
+  bindRange('b1', 'ob1', function () { b1 = parseFloat($('b1').value); refresh(); });
+  bindRange('k2', 'ok2', function () { k2 = parseFloat($('k2').value); refresh(); });
+  bindRange('b2', 'ob2', function () { b2 = parseFloat($('b2').value); refresh(); });
+  $('show2').addEventListener('change', function () { renderFormula(); draw(); });
+  $('showPt').addEventListener('change', draw);
+  $('qnext').addEventListener('click', genQuiz);
+
+  function refresh() { renderFormula(); renderProps(); draw(); }
+
+  // 暗色切换时重绘
+  new MutationObserver(function () { draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  refresh();
+  genQuiz();
+})();
+</script>
+</body>
+</html>
